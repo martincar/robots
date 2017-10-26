@@ -1,0 +1,11 @@
+function angle = KahanP4(a,b,c)
+    if a + b > c
+    
+    elseif
+        
+    else
+        
+    end
+    
+end
+
