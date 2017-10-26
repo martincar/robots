@@ -108,6 +108,14 @@ disp(T);
 disp('J:');
 disp(J);
 
+% output k, j and location
+disp('O_d:');
+disp(T(1:3,4));
+disp('k_d');
+disp(T(1:3,3));
+disp('j_d');
+disp(T(1:3,2));
+
 % create function to return i rotation matrix from angle input (in degrees)
 function f = i_rot(n)
     f = [1 0 0; 0 cosd(n) -sind(n); 0 sind(n) cosd(n)];

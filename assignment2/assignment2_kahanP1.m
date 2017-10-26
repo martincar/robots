@@ -62,15 +62,23 @@ end
 
 % finding theta1
 % find home position vector from origin to wrist centre
-u = (O_4 - O_0);
+i0 = C_0(:,1);
+j0 = C_0(:,2);
+
+u_i0 = dot( (O_4 - O_0), i0 ) * i0;
+u_j0 = dot( (O_4 - O_0), j0 ) * j0;
+
+u = u_i0 + u_j0;
 
 % find new wrist centre vector using desired approach vector and desired end effector location
 O_4_new = O_d - d6*k_d; 
-w = (O_4_new - O_0);
 
-% use kahanP2 around k0 with the two wrist centre vectors to find theta 1
-k_0 = C_0(:,3);
-theta1 = KahanP2(k_0, u, w); % NOTE: currently only finds one solution for theta 1
+v_i0 = dot( (O_4_new - O_0), i0 ) * i0;
+v_j0 = dot( (O_4_new - O_0), j0 ) * j0;
+
+v = v_i0 + v_j0;
+
+theta1 = KahanP1(u, v); % NOTE: currently only finds one solution for theta 1
 
 % find transformation matrix from C0 to C1
 T_11 = k_rot(theta1)*i_rot(-90);
@@ -106,21 +114,19 @@ phi3 = atand(a3/d4);
 theta3 = KahanP4(a,b,c) - phi3; % NOTE: currently only finds one solution for theta 3
 
 % finding theta2 
-% use wrist centre vector as w
-u = O_4_new - O_1;
+% use wrist centre vector projected onto i1, j1 as u
+u_i1 = dot( (O_4_new - O_1), i1 ) * i1;
+u_j1 = dot( (O_4_new - O_1), j1 ) * j1;
+
+u = u_i1 + u_j1;
 % split vector from origin2 to wrist centre into i1, j1 components
-w_j1 = sqrt(a3^2 + d4^2) * sind(theta3 + phi3) * -j1;
-
+v_j1 = sqrt(a3^2 + d4^2) * sind(theta3 + phi3) * -j1;
 o2v_i1 = sqrt(a3^2 + d4^2) * cosd(theta3 + phi3) * i1;
-w_i1 = o2v_i1 + a2*i1;
-w = w_j1 + w_i1;
+v_i1 = o2v_i1 + a2*i1;
 
-k1 = C_1_new(:,3);
-theta2 = KahanP2(k1, u, w);
+v = v_j1 + v_i1;
 
-theta1
-theta2
-theta3
+theta2 = KahanP1(u, v);
 
 % create function to return i rotation matrix from angle input (in degrees)
 function f = i_rot(n)
