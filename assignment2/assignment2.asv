@@ -172,8 +172,9 @@ all_solns = transpose(unique(all_solns', 'rows', 'stable'));
 solns_size = size(all_solns);
 num_solns = solns_size(2);
 
-% 
+% create array of zeroes to append to
 solns = zeros(6,1);
+
 % for each solution
 for i=1:num_solns
    % create array of boundaries for joint limits
@@ -192,8 +193,19 @@ for i=1:num_solns
    
    % if append flag true (no out of bounds angles)
    if append == 1
-       % create bound solution vector 
-       eval(['bound_soln' num2str(i) '= solns(:,i);']);
+       % append current solution to final solutions matrix
+       solns = [solns all_solns(:,i)];
    end
 end
+
+% remove zero column from solutions matrix
+solns(:,1) = [];
+
+% find amount of solns inside joint limits
+solns_size = size(solns);
+num_final_solns = solns_size(2);
+
+disp('Results: each column is a unique solution within joint limits (theta1-6)')
+fprintf('%d solutions found.\n',num_final_);
+disp(solns)
 

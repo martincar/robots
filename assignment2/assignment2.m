@@ -201,6 +201,11 @@ end
 % remove zero column from solutions matrix
 solns(:,1) = [];
 
+% find amount of solns inside joint limits
+solns_size = size(solns);
+num_final_solns = solns_size(2);
+
 disp('Results: each column is a unique solution within joint limits (theta1-6)')
 disp(solns)
+fprintf('%d solutions found.\n',num_final_solns);
 
