@@ -162,15 +162,18 @@ for i=1:num_solns
 end
 
 % append all arm + wrist solutions together
-solns = [soln1 soln2 soln3 soln4];
+all_solns = [soln1 soln2 soln3 soln4];
 
 % remove all duplicate solutions
-solns = transpose(unique(solns', 'rows', 'stable'));
+all_solns = transpose(unique(all_solns', 'rows', 'stable'));
 
 % remove any solutions with angles outside of joint limits
 % find number of solutions (columns)
-solns_size = size(solns);
+solns_size = size(all_solns);
 num_solns = solns_size(2);
+
+% create array of zeroes to append to
+solns = zeros(6,1);
 
 % for each solution
 for i=1:num_solns
@@ -178,6 +181,26 @@ for i=1:num_solns
    bot_bounds = [-160; -225; -135; -110; -100; -266];
    top_bounds = [160; 45; 135; 170; 100; 266];
    
+   % set append flag to true by default
+   append = 1;
+   % for each bound
+   for j=1:6
+       % if an angle is outside of the bounds, set append flag to false
+      if all_solns(j,i) < bot_bounds(j) || all_solns(j,i) > top_bounds(j)
+         append = 0; 
+      end
+   end
    
+   % if append flag true (no out of bounds angles)
+   if append == 1
+       % append current solution to final solutions matrix
+       solns = [solns all_solns(:,i)];
+   end
 end
+
+% remove zero column from solutions matrix
+solns(:,1) = [];
+
+disp('Results: each column is a unique solution within joint limits (theta1-6)')
+disp(solns)
 
