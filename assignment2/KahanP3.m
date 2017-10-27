@@ -11,7 +11,7 @@ function [theta1, phi1, theta2, phi2] = KahanP3(s,t,u,v)
     proj = [dot(u,s); dot(v,t)];
     
     % solve for alpha and beta
-    scales = proj / P;
+    scales = P\proj; % inverse of P * proj
     alpha = scales(1);
     beta = scales(2);
     

@@ -14,24 +14,24 @@ for i=1:6
     theta = params(i);
     
     % create transformation matrix with name Q1 - Q6 based on iteration
-    k_rot = [cosd(theta), -sind(theta), 0; sind(theta), cosd(theta), 0; 0, 0, 1];
+    k_rot_theta = [cosd(theta), -sind(theta), 0; sind(theta), cosd(theta), 0; 0, 0, 1];
     if i==1
-        T_11 = k_rot*i_rot(-90);
+        T_11 = k_rot_theta*i_rot(-90);
         T_12 = [0; 0; 0];
     elseif i==2
-        T_11 = k_rot*i_rot(180);
-        T_12 = k_rot*[431.8; 0; 0];
+        T_11 = k_rot_theta*i_rot(180);
+        T_12 = k_rot_theta*[431.8; 0; 0];
     elseif i==3
         T_11 = [cosd(theta+90), -sind(theta+90), 0; sind(theta+90), cosd(theta+90), 0; 0, 0, 1]*i_rot(90);
         T_12 = [0; 0; -149.09] + [cosd(theta+90), -sind(theta+90), 0; sind(theta+90), cosd(theta+90), 0; 0, 0, 1]*[20.32; 0; 0];
     elseif i==4
-        T_11 = k_rot*i_rot(90);
+        T_11 = k_rot_theta*i_rot(90);
         T_12 = [0; 0; 433.07];
     elseif i==5
-        T_11 = k_rot*i_rot(-90);
+        T_11 = k_rot_theta*i_rot(-90);
         T_12 = [0; 0; 0];
     elseif i==6
-        T_11 = k_rot;
+        T_11 = k_rot_theta;
         T_12 = [0; 0; 60];
     end
     T_21 = [0 0 0];

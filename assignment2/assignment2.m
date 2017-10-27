@@ -2,12 +2,12 @@
 constants
 
 % get user input
-O_d = input('Input end effector location: (eg. [924.87; 149.09; 20.32])\n(Enter 0 for default):\n');
+O_d = input('Input end effector location: (eg. [925; 149.1; 20.3])\n(Enter 0 for default):\n');
 temp_size = size(O_d);
 % if dimensions of input are incorrect, try again
 while (temp_size(1) ~= 3) || (temp_size(2) ~= 1) 
     if O_d == 0
-        O_d = [924.87; 149.09; 20.32];
+        O_d = [925; 149.1; 20.3];
     else
         O_d = input('Incorrect dimensions in input, try again:\n');
     end
@@ -27,10 +27,10 @@ end
 
 j_d = input('Input sliding vector j: (eg. [0;-1;0])\n(Enter 0 for default):\n');
 temp_size = size(j_d);
-while (temp_size(1) ~= 3) || (temp_size(2) ~= 1) || (dot(k_d, j_d) ~= 0)
+while (temp_size(1) ~= 3) || (temp_size(2) ~= 1) || (dot(k_d, j_d) >= 1e-4)
     if j_d == 0
         j_d = [0;-1;0];
-    elseif dot(k_d, j_d) ~= 0
+    elseif dot(k_d, j_d) >= 1e-4
         j_d = input('Sliding vector not orthogonal to approach vector, try again:\n');
     else
         j_d = input('Incorrect dimensions in input, try again:\n');
@@ -38,7 +38,7 @@ while (temp_size(1) ~= 3) || (temp_size(2) ~= 1) || (dot(k_d, j_d) ~= 0)
     temp_size = size(j_d);
 end
 
-% Calculate and explicitly define all origins and frames using angle_to_matrix_jacobian.m
+% Calculate and explicitly define all home origins and frames using angle_to_matrix_home script
 angle_to_matrix_home;
 
 C_0 = [ 1 0 0;
@@ -60,75 +60,124 @@ for i = 1:6
 
 end
 
-% finding theta1
-% find home position vector from origin to wrist centre
-u = (O_4 - O_0);
-
-% find new wrist centre vector using desired approach vector and desired end effector location
+% finding theta3
+% % find new wrist centre vector using desired approach vector and desired end effector location
 O_4_new = O_d - d6*k_d; 
 w = (O_4_new - O_0);
+arm_length_desired = norm(w);
 
-% use kahanP2 around k0 with the two wrist centre vectors to find theta 1
-k_0 = C_0(:,3);
-theta1 = KahanP2(k_0, u, w); % NOTE: currently only finds one solution for theta 1
+%c_prime is the desired arm length projected onto home position arm plane. 
+c_prime = sqrt(arm_length_desired^2 - d3^2);
 
-% find transformation matrix from C0 to C1
-T_11 = k_rot(theta1)*i_rot(-90);
-T_12 = [0; 0; 0];
-T1 = [T_11 T_12; zeros(1,3) 1];
-
-% find C1, O1
-sys_1_new = sys_0*T1;
-C_1_new = sys_1_new(1:3, 1:3);
-O_1_new = sys_1_new(1:3, 4);
-
-% finding theta3
-% use new wrist centre vector as c in kahan P4
-% find i1, j1 to find k-j plane projection of new wrist centre vector
-% (magnitudes)
-i1 = C_1_new(:,1);
-j1 = C_1_new(:,2);
-
-% dot new 0_4 vector with i, j
-c_i1 = dot( (O_4_new - O_0),  i1 );
-c_j1 = dot( (O_4_new - O_0),  j1 );
-
-% use hypotenuse of k-j plane projection components as c
-c = sqrt( c_i1^2 + c_j1^2 );
-
-% use origin0 to origin2 length as a
-a = a2;
-
-% use hypotenuse of io and jo directions from origin2 to origin4 (wrist centre) as b
 b = sqrt(a3^2 + d4^2);
+phi = atand(a3/d4); %phi is the angle resulting from the vertical offset in the arm 
 
-phi3 = atand(a3/d4);
-theta3 = KahanP4(a,b,c) - phi3; % NOTE: currently only finds one solution for theta 3
+theta3 = KahanP4(a2,b,c_prime) - phi;
 
-% finding theta2 
-% use wrist centre vector as w
-u = O_4_new - O_1;
-% split vector from origin2 to wrist centre into i1, j1 components
-w_j1 = sqrt(a3^2 + d4^2) * sind(theta3 + phi3) * -j1;
-
-o2v_i1 = sqrt(a3^2 + d4^2) * cosd(theta3 + phi3) * i1;
-w_i1 = o2v_i1 + a2*i1;
-w = w_j1 + w_i1;
-
-k1 = C_1_new(:,3);
-theta2 = KahanP2(k1, u, w);
-
-theta1
-theta2
-theta3
-
-% create function to return i rotation matrix from angle input (in degrees)
-function f = i_rot(n)
-    f = [1 0 0; 0 cosd(n) -sind(n); 0 sind(n) cosd(n)];
+%filtering out super small angles that happened due to variable rounding
+if theta3 < 1e-10
+   theta3 = 0;
 end
 
-function f = k_rot(n)
-    f = [cosd(n), -sind(n), 0; sind(n), cosd(n), 0; 0, 0, 1];
+% find theta 1 and theta 2
+u = O_4_new - O_0;
+
+% first theta 3 solution
+% find transformation matrix of theta3 rotation
+T_11 = k_rot(theta3 + 90)*i_rot(90);
+T_12 = [0; 0; -149.09] + k_rot(theta3 + 90)*[20.32; 0; 0];
+T3_new = [T_11 T_12; zeros(1,3) 1;];
+
+% find new system assuming only theta3 movement
+sys_4_new = T1*T2*T3_new*T4*sys_0;
+% extract location from system
+v = sys_4_new(1:3, 4);
+
+% set rotation matrices of j0 and k0
+s = [0;0;1];
+t = [0;1;0];
+
+% do kahan P3 to find 2 sets of theta1 and theta 2 (left and right shoulder)
+[theta1_left, theta2_left, theta1_right, theta2_right] = KahanP3(s,t,u,v);
+
+% reverse theta1 direction because kahanP3 gives the opposite theta1 rotation
+theta1_left = -1 * theta1_left;
+theta1_right = -1 * theta1_right;
+
+arm_soln1 = [theta1_left; theta2_left; theta3];
+arm_soln2 = [theta1_right; theta2_right; theta3];
+
+% second theta 3 solution
+% find transformation matrix of -theta3 rotation
+T_11 = k_rot(-1* theta3 + 90)*i_rot(90);
+T_12 = [0; 0; -149.09] + k_rot(-1 * theta3 + 90)*[20.32; 0; 0];
+T3_new = [T_11 T_12; zeros(1,3) 1;];
+
+% find new system assuming only -theta3 movement
+sys_4_new = T1*T2*T3_new*T4*sys_0;
+% extract location from system
+v = sys_4_new(1:3, 4);
+
+% set rotation matrices of j0 and k0
+s = [0;0;1];
+t = [0;1;0];
+
+% do kahan P3 to find 2 sets of theta1 and theta 2 (left and right shoulder)
+[theta1_left, theta2_left, theta1_right, theta2_right] = KahanP3(s,t,u,v);
+
+% reverse theta1 direction because kahanP3 gives the opposite theta1 rotation
+theta1_left = -1 * theta1_left;
+theta1_right = -1 * theta1_right;
+
+arm_soln3 = [theta1_left; theta2_left; -1 * theta3];
+arm_soln4 = [theta1_right; theta2_right; -1 * theta3];
+
+% make matrix of all solutions
+arm_solns = [arm_soln1 arm_soln2 arm_soln3 arm_soln4];
+
+% create C3 for each arm solution
+% take unique rows of solution transpose and make it non-transpose again
+% basically finds unique columns to avoid duplicate arm solutions
+arm_solns = transpose(unique(arm_solns', 'rows', 'stable'));
+
+% find number of unique solutions (number of columns in array)
+arm_soln_size = size(arm_solns);
+num_solns = arm_soln_size(2);
+
+% for each unique arm solution
+for i=1:num_solns
+    % extract correct arm solution from arm solution matrix
+    arm_soln = arm_solns(1:3, i);
+    % create frame 3 for each arm solution
+    c3 = create_c3(arm_soln);
+    
+    % find wrist solutions (input frame 3 and desired k and j
+    wrist_solns_temp = wrist_kinematics(c3, k_d, j_d);
+    
+    % append the same arm solution on top of wrist solutions
+    solutions_temp = [arm_soln arm_soln arm_soln arm_soln;
+                      wrist_solns_temp;                   ];
+    
+    eval(['soln' num2str(i) '= solutions_temp;']);
 end
 
+% append all arm + wrist solutions together
+solns = [soln1 soln2 soln3 soln4];
+
+% remove all duplicate solutions
+solns = transpose(unique(solns', 'rows', 'stable'));
+
+% remove any solutions with angles outside of joint limits
+% find number of solutions (columns)
+solns_size = size(solns);
+num_solns = solns_size(2);
+
+% for each solution
+for i=1:num_solns
+   % create array of boundaries for joint limits
+   bot_bounds = [-160; -225; -135; -110; -100; -266];
+   top_bounds = [160; 45; 135; 170; 100; 266];
+   
+   
+end
 
