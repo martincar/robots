@@ -37,6 +37,39 @@ function wrist_solns = wrist_kinematics(c3, k_d, j_d)
         theta6_4 = theta6_2 - 360;
     end
     
+    % filter out small values of theta 4,5,6
+    % round really small values to 0
+    if theta4_1 < 1e-10 && theta4_1 > -1e-10
+       theta4_1 = 0;
+    end
+
+    if theta5_1 < 1e-10 && theta5_1 > -1e-10
+       theta5_1 = 0;
+    end
+
+    if theta4_2 < 1e-10 && theta4_2 > -1e-10
+       theta4_2 = 0;
+    end
+
+    if theta5_2 < 1e-10 && theta5_2 > -1e-10
+       theta5_2 = 0;
+    end
+    
+    if theta6_1 < 1e-10 && theta6_1 > -1e-10
+       theta6_1 = 0;
+    end
+
+    if theta6_2 < 1e-10 && theta6_2 > -1e-10
+       theta6_2 = 0;
+    end
+    if theta6_3 < 1e-10 && theta6_3 > -1e-10
+       theta6_3 = 0;
+    end
+
+    if theta6_4 < 1e-10 && theta6_4 > -1e-10
+       theta6_4 = 0;
+    end
+
     soln1 = [theta4_1; theta5_1; theta6_1];
     soln2 = [theta4_1; theta5_1; theta6_3];
     soln3 = [theta4_2; theta5_2; theta6_2];

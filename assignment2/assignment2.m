@@ -74,8 +74,8 @@ phi = atand(a3/d4); %phi is the angle resulting from the vertical offset in the 
 
 theta3 = KahanP4(a2,b,c_prime) - phi;
 
-%filtering out super small angles that happened due to variable rounding
-if theta3 < 1e-10
+% if theta3 is really small, set to 0 to avoid -0 values
+if theta3 < 1e-10 && theta3 > -1e-10
    theta3 = 0;
 end
 
@@ -83,7 +83,7 @@ end
 u = O_4_new - O_0;
 
 % first theta 3 solution
-% find transformation matrix of theta3 rotation
+% find transformation matrix of theta3 rotation with theta 1 and 2 being 0
 T_11 = k_rot(theta3 + 90)*i_rot(90);
 T_12 = [0; 0; -149.09] + k_rot(theta3 + 90)*[20.32; 0; 0];
 T3_new = [T_11 T_12; zeros(1,3) 1;];
@@ -104,12 +104,29 @@ t = [0;1;0];
 theta1_left = -1 * theta1_left;
 theta1_right = -1 * theta1_right;
 
+% round really small values to 0
+if theta1_left < 1e-10 && theta1_left > -1e-10
+   theta1_left = 0;
+end
+
+if theta2_left < 1e-10 && theta2_left > -1e-10
+   theta2_left = 0;
+end
+
+if theta1_right < 1e-10 && theta1_right > -1e-10
+   theta1_right = 0;
+end
+
+if theta2_right < 1e-10 && theta2_right > -1e-10
+   theta2_right = 0;
+end
+
 arm_soln1 = [theta1_left; theta2_left; theta3];
 arm_soln2 = [theta1_right; theta2_right; theta3];
 
 % second theta 3 solution
 % find transformation matrix of -theta3 rotation
-T_11 = k_rot(-1* theta3 + 90)*i_rot(90);
+T_11 = k_rot(-1 * theta3 + 90)*i_rot(90);
 T_12 = [0; 0; -149.09] + k_rot(-1 * theta3 + 90)*[20.32; 0; 0];
 T3_new = [T_11 T_12; zeros(1,3) 1;];
 
@@ -129,22 +146,34 @@ t = [0;1;0];
 theta1_left = -1 * theta1_left;
 theta1_right = -1 * theta1_right;
 
+% round really small values to 0
+if theta1_left < 1e-10 && theta1_left > -1e-10
+   theta1_left = 0;
+end
+
+if theta2_left < 1e-10 && theta2_left > -1e-10
+   theta2_left = 0;
+end
+
+if theta1_right < 1e-10 && theta1_right > -1e-10
+   theta1_right = 0;
+end
+
+if theta2_right < 1e-10 && theta2_right > -1e-10
+   theta2_right = 0;
+end
+
 arm_soln3 = [theta1_left; theta2_left; -1 * theta3];
 arm_soln4 = [theta1_right; theta2_right; -1 * theta3];
 
 % make matrix of all solutions
 arm_solns = [arm_soln1 arm_soln2 arm_soln3 arm_soln4];
 
-% create C3 for each arm solution
-% take unique rows of solution transpose and make it non-transpose again
-% basically finds unique columns to avoid duplicate arm solutions
-arm_solns = transpose(unique(arm_solns', 'rows', 'stable'));
-
-% find number of unique solutions (number of columns in array)
+% find number of solutions (number of columns in array)
 arm_soln_size = size(arm_solns);
 num_solns = arm_soln_size(2);
 
-% for each unique arm solution
+% for each arm solution
 for i=1:num_solns
     % extract correct arm solution from arm solution matrix
     arm_soln = arm_solns(1:3, i);
@@ -165,7 +194,7 @@ end
 all_solns = [soln1 soln2 soln3 soln4];
 
 % remove all duplicate solutions
-all_solns = transpose(unique(all_solns', 'rows', 'stable'));
+all_solns = transpose(unique(all_solns', 'rows'));
 
 % remove any solutions with angles outside of joint limits
 % find number of solutions (columns)
@@ -207,5 +236,5 @@ num_final_solns = solns_size(2);
 
 disp('Results: each column is a unique solution within joint limits (theta1-6)')
 disp(solns)
-fprintf('%d solutions found.\n',num_final_solns);
+fprintf('%d solutions found.\n',num_final_solns)
 
