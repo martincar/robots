@@ -238,3 +238,8 @@ disp('Results: each column is a unique solution within joint limits (theta1-6)')
 disp(solns)
 fprintf('%d solutions found.\n',num_final_solns)
 
+% forward kinematics test
+% for i=1:num_final_solns
+%    forward_kin_test(solns(:,i)); 
+% end
+
